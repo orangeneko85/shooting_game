@@ -5,6 +5,22 @@ import random
 GRID_SIZE = 5
 PLAYER_POS = (2, 2)
 
+# ============================
+# Best score persistence
+# ============================
+BEST_SCORE_FILE = "best_score.txt"
+
+def load_best_score():
+    try:
+        with open(BEST_SCORE_FILE, "r") as f:
+            return int(f.read().strip())
+    except:
+        return 0
+
+def save_best_score(score):
+    with open(BEST_SCORE_FILE, "w") as f:
+        f.write(str(score))
+
 # ----------------------------
 # Enemy spawn (outer ring only)
 # ----------------------------
@@ -60,11 +76,13 @@ def draw_grid(stdscr, enemy_pos=None, bullet_path=None):
 
             stdscr.addstr(y, x * 2, char)
 
-def draw_menu(stdscr):
+def draw_menu(stdscr, best_score):
     stdscr.clear()
     draw_grid(stdscr)
     stdscr.addstr(1, 12, "press y to start")
     stdscr.addstr(2, 12, "press n to quit")
+    stdscr.addstr(4, 12, f"the best score: {best_score}")
+    stdscr.addstr(5, 12, 'press "o" to reset best score')
     stdscr.refresh()
 
 def draw_hud(stdscr, hp, score):
@@ -75,9 +93,10 @@ def draw_game_over(stdscr, score, best_score):
     stdscr.clear()
     draw_grid(stdscr)
     stdscr.addstr(1, 12, f"score this time: {score}")
-    stdscr.addstr(2, 12, f"best score: {best_score}")
+    stdscr.addstr(2, 12, f"the best score: {best_score}")
     stdscr.addstr(4, 12, "press e to start another game")
     stdscr.addstr(5, 12, "press q to quit")
+    stdscr.addstr(6, 12, 'press "o" to reset best score')
     stdscr.refresh()
 
 # ----------------------------
@@ -113,13 +132,13 @@ def main(stdscr):
     stdscr.nodelay(True)
 
     state = "MENU"
-    best_score = 0
+    best_score = load_best_score()
 
     while state != "EXIT":
 
         # -------- MENU --------
         if state == "MENU":
-            draw_menu(stdscr)
+            draw_menu(stdscr, best_score)
             while True:
                 key = stdscr.getch()
                 if key == ord('y'):
@@ -128,6 +147,10 @@ def main(stdscr):
                 if key == ord('n'):
                     state = "EXIT"
                     break
+                if key == ord('o'):
+                    best_score = 0
+                    save_best_score(0)
+                    draw_menu(stdscr, best_score)
                 time.sleep(0.1)
 
         # -------- COUNTDOWN --------
@@ -169,6 +192,7 @@ def main(stdscr):
                     hp -= 1
                     if hp == 0:
                         best_score = max(best_score, score)
+                        save_best_score(best_score)
                         state = "GAME_OVER"
                         break
                     enemy_pos = spawn_enemy()
@@ -190,6 +214,10 @@ def main(stdscr):
                 if key == ord('q'):
                     state = "EXIT"
                     break
+                if key == ord('o'):
+                    best_score = 0
+                    save_best_score(0)
+                    draw_game_over(stdscr, score, best_score)
                 time.sleep(0.1)
 
 # ----------------------------
